@@ -10,4 +10,6 @@ import com.Auction.Platform.Entity.User;
 @Repository
 public interface UserRepository extends JpaRepository<User, UUID> {
     User findByEmail(String email);
+    
+    User findByUserId(UUID id);
 }
