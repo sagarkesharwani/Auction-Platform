@@ -1,6 +1,8 @@
 package com.Auction.Platform.Controllers;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -10,9 +12,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.Auction.Platform.Dto.BidDetailsDto;
 import com.Auction.Platform.Entity.AuctionProduct;
@@ -22,7 +24,7 @@ import com.Auction.Platform.Repository.AuctionProductRepository;
 import com.Auction.Platform.Repository.BidRepository;
 import com.Auction.Platform.Repository.UserRepository;
 
-@Controller
+@RestController
 public class BidController {
 
     private final BidRepository bidRepository;
@@ -74,6 +76,23 @@ public class BidController {
                     bid.getAuction().getId(),bid.getBidder().getName()
                 ))
                 .collect(Collectors.toList()));
+//        return ResponseEntity.ok(bids);
+    }
+    
+    @GetMapping("/api/auction/{auctionId}/status")
+    public ResponseEntity<Map<UUID,Boolean>> getAuctionStatus(@PathVariable("auctionId") String auctionId) {
+    	
+    	System.out.println("IN getAuctionStatus");
+    	Boolean isActive=null;
+    	UUID productId = UUID.fromString(auctionId);
+    	Optional<AuctionProduct> product= auctionProductRepository.findById(productId);
+    	if(!product.isEmpty()) {
+    		isActive=product.get().getStatus().equalsIgnoreCase("Live")?true:false;
+    	}
+    	Map<UUID,Boolean>response=new HashMap<>();
+    	response.put(productId, isActive);
+
+        return ResponseEntity.ok(response);
 //        return ResponseEntity.ok(bids);
     }
 

@@ -3,6 +3,7 @@ package com.Auction.Platform.Controllers;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,7 +20,9 @@ import com.Auction.Platform.Dto.AuctionBid;
 import com.Auction.Platform.Dto.JoinMessage;
 import com.Auction.Platform.Dto.JoinRequestDTO;
 import com.Auction.Platform.Dto.ToastMessage;
+import com.Auction.Platform.Entity.AuctionProduct;
 import com.Auction.Platform.Entity.User;
+import com.Auction.Platform.Repository.AuctionProductRepository;
 import com.Auction.Platform.Repository.UserRepository;
 import com.Auction.Platform.Service.AuctionSessionService;
 
@@ -35,6 +38,9 @@ public class AuctionWebSocketController {
   @Autowired
   private UserRepository userRepository;
 
+  
+  @Autowired
+  AuctionProductRepository auctionProductRepository;
   
   private final Map<UUID, UUID> sessionIdToUserIdMap = new ConcurrentHashMap<>();
 
@@ -118,6 +124,23 @@ public class AuctionWebSocketController {
       messagingTemplate.convertAndSend("/topic/auction/" + auctionId + "/toast", new ToastMessage(userId, sessionId,user.getName()));
   }
 
+  public void broadcastAuctionOver(UUID auctionId) {
+      Map<UUID, User> users = auctionRoomUsers.get(auctionId);
+  	Optional<AuctionProduct> product= auctionProductRepository.findById(auctionId);
+  	if(!product.isEmpty()) {
+  		AuctionProduct productDetails=product.get();
+  		productDetails.setStatus("Ended");
+  		auctionProductRepository.save(productDetails);
+  	}
+      if (users != null && !users.isEmpty()) {
+    	    users.clear();
+    	    // Optional cleanup: remove the map if it's now empty
+    	    if (users.isEmpty()) {
+    	        auctionRoomUsers.remove(auctionId);
+    	    }
+    	}
+      messagingTemplate.convertAndSend("/topic/auction/auctionOver/auctionId" + auctionId, "Auction is over");
+  }
 
 
 }

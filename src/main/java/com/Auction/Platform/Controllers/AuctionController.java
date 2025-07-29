@@ -18,6 +18,7 @@ import com.Auction.Platform.Dto.AuctionDetailsDTO;
 import com.Auction.Platform.Dto.AuctionProductDTO;
 import com.Auction.Platform.Entity.AuctionProduct;
 import com.Auction.Platform.Service.AuctionProductService;
+import com.Auction.Platform.Service.AuctionSessionService;
 
 @RestController
 @RequestMapping("api/")
@@ -25,6 +26,9 @@ public class AuctionController {
 
 	@Autowired
 	AuctionProductService	auctionProductService;
+	
+	@Autowired
+	AuctionSessionService auctionSessionService;
 	
 	@PostMapping("/auction-products")
 	public ResponseEntity<AuctionProduct> addProduct(
@@ -62,4 +66,10 @@ public class AuctionController {
 	    }
     }
     
+    
+    @PostMapping("auction/start/{auctionId}")
+    public String startAuction(@PathVariable UUID auctionId) {
+    	auctionSessionService.startAuction(auctionId);
+        return "Auction started for 15 minutes.";
+    }
 }

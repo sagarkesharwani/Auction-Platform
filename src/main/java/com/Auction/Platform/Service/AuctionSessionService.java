@@ -1,18 +1,39 @@
 package com.Auction.Platform.Service;
 
 import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
+
+import com.Auction.Platform.Controllers.AuctionWebSocketController;
 
 @Service
 public class AuctionSessionService {
 
     private final Map<UUID, Set<UUID>> auctionRoomUsers = new ConcurrentHashMap<>();
+    
+    private final TaskScheduler scheduler;
+    private final AuctionWebSocketService webSocketService;
+    private final static Map<UUID,Boolean> liveAuctions = new HashMap<>();
+    
+    @Lazy
+    @Autowired
+    AuctionWebSocketController auctionController;
+    		
+   public AuctionSessionService(TaskScheduler scheduler, AuctionWebSocketService webSocketService) {
+        this.scheduler = scheduler;
+        this.webSocketService = webSocketService;
+    }
+;
 
 //    public void addUserToRoom(UUID auctionId, UUID username) {
 //        auctionRoomUsers.computeIfPresent(auctionId, k -> ConcurrentHashMap.newKeySet()).add(username);
@@ -45,5 +66,21 @@ public class AuctionSessionService {
 
         // Return a new copy to avoid external modification
         return new HashSet<>(auctionRoomUsers.get(auctionId));
+    }
+    
+    public void startAuction(UUID auctionId) {
+    	
+    	liveAuctions.put(auctionId,true);
+    	if(liveAuctions.containsKey(auctionId)) {
+    		// Schedule 1-minute auction end
+    		scheduler.schedule(() -> {
+    			auctionController.broadcastAuctionOver(auctionId);
+    			System.out.println("Auction " + auctionId + " ended.");
+    			
+    			// Cleanup
+//    	        userSessionService.removeUsersFromRoom(auctionId); // <-- This should be implemented
+    		}, new Date(System.currentTimeMillis() + 1*500 * 1000));
+    	}
+    	
     }
 }
